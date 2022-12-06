@@ -1,0 +1,176 @@
+---
+title: "Individual Project 2"
+author: "Mamon, Jasmin Mae G."
+date: "2022-12-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r a}
+library(twitteR) 
+library(dplyr)
+library(tidyr)
+library(plotly)
+library(ggplot2)
+library(RColorBrewer)
+library(tidytext)
+library(rtweet)
+library(tm)
+library(slam)
+library(wordcloud)
+library(wordcloud2)
+library(corpus)
+```
+
+>
+Set-up credentials
+
+```{r b}
+CONSUMER_SECRET <- "WJXiTWYd6qY3NtwOaX8alreAbbv3sUpjiIVsMRYZWAL0j5xIAK"
+CONSUMER_KEY <- "YULyHZwxMbIYGCmJEMSpvvv0D"
+ACCESS_SECRET <- "HWJOiuSEVkzQTIGY9HZH14UTIRyHxRBv1wcLUt9ixHT9m"
+ACCESS_TOKEN <- "1595205822350401536-hk8oSRVWz5LpnnM2fw0WRqbuwxk2zP"
+``` 
+
+>
+Connect to twitter app
+
+```{r c}
+setup_twitter_oauth(consumer_key = CONSUMER_KEY,
+                    consumer_secret = CONSUMER_SECRET,
+                    access_token = ACCESS_TOKEN,
+                    access_secret = ACCESS_SECRET)
+```
+
+>
+Extract 10000 tweets from Twitter using twitteR package including tweets and retweets.
+
+```{r d}
+trends_on_twitter <- searchTwitter("Seventeen",
+                             n = 10000,
+                             lang = "en",
+                             since = "2022-11-10",
+                             until = "2022-12-4",
+                             retryOnRateLimit = 120)
+
+trends_on_twitter
+```
+ 
+
+>
+Convert data into dataframe
+
+```{r e}
+trends_on_twitterDF <- twListToDF(trends_on_twitter)
+trends_on_twitterDF
+
+
+#Save is as a file
+save(trends_on_twitterDF,file = "trendsonTweetsDF.Rdata")
+
+#load the file
+load(file = "trendsonTweetsDF.Rdata")
+
+sapply_data <- sapply(trends_on_twitterDF, function(x) sum(is.na(x)))
+sapply_data
+```
+
+
+>
+2.Subset the retweets and the original tweets into a separate file.
+SUBSETTING USING the dplyr() package
+
+>
+Original tweets
+
+```{r f}
+subTweets  <- trends_on_twitterDF %>%
+  select(screenName, text, created, isRetweet) %>%
+  filter(isRetweet == "FALSE")
+subTweets
+```
+
+>
+Saving a new file as Rdata
+
+```{r g}
+save(subTweets, file = "subTweetsDF.Rdata")
+```
+
+>
+Grouping the date created
+
+```{r h}
+subTweets %>%  
+  group_by(1) %>%  
+  summarise(max = max(created), min = min(created))
+subTweets  %>% pull(created) %>% min()
+subTweets %>% pull(created) %>% max()
+
+crtd1 <- subTweets %>%  mutate(Created_At_Round = created %>%
+                                 round(units = 'hours') %>% as.POSIXct())
+crtd1
+```
+
+>
+Plot on tweets by time using the library(plotly) and ggplot().
+
+```{r I}
+mams <- ggplot(crtd1, aes(x = Created_At_Round)) +
+  geom_histogram(aes(fill = ..count..)) +
+  theme(legend.position = "right") +
+  xlab("Time") + ylab("Number of tweets") + 
+  scale_fill_gradient(low = "red", high = "blue")
+
+mams %>% ggplotly()
+```
+
+
+>
+With retweet
+
+```{r j}
+setTweets <- trends_on_twitterDF %>%
+  select(screenName, text, created, isRetweet) %>%
+  filter(isRetweet == "TRUE")
+setTweets
+
+#saving a new file as Rdata
+save(setTweets, file = "setTweetsDF.Rdata")
+```
+
+>
+Grouping the date created
+
+```{r k}
+setTweets %>%  
+  group_by(1) %>%  
+  summarise(max = max(created), min = min(created))
+setTweets  %>% pull(created) %>% min()
+setTweets %>% pull(created) %>% max()
+
+crtd <- setTweets %>%  mutate(Created_At_Round = created %>%
+round(units = 'hours') %>% as.POSIXct())
+crtd
+```
+
+>
+Plot on tweets by time using the library(plotly) and ggplot().
+
+```{r l}
+mams2 <- ggplot(crtd, aes(x = Created_At_Round)) +
+  geom_histogram(aes(fill = ..count..)) +
+  theme(legend.position = "right") +
+  xlab("Time") + ylab("Number of tweets") + 
+  scale_fill_gradient(low = "blue", high = "pink")
+
+mams2 %>% ggplotly()
+```
+
+
+
